@@ -5,8 +5,8 @@
       <div class="category-card">
         <h3>Categories</h3>
         <ul class="category-list">
-          <li v-for="(category, index) in categories" :key="index" @click="filterByCategory(category)">
-            {{ category }}
+          <li v-for="category in categories" :key="category.catid" @click="filterByCategory(category)">
+            {{ category.name }}
           </li>
         </ul>
       </div>
@@ -14,25 +14,24 @@
 
     <div class="content">
       <header>
-        
         <nav class="level-menu">
           <ul>
             <li><a href="#" @click="goToHome">Home</a></li>
-            <li v-if="selectedCategory"><a href="#" @click="goToCategoryPage(selectedCategory)">{{ selectedCategory }}</a></li>
+            <li v-if="selectedCategory"><a>|{{ selectedCategory }}</a></li>
           </ul>
         </nav>
       </header>
 
       <!-- Main content: Products wrapped in a card -->
       <section class="product-list">
-        <div v-for="product in filteredProducts" :key="product.id" class="product-item card">
+        <div v-for="product in products" :key="product.pid" class="product-item card">
           <img
-            :src="product.thumbnail"
+            :src="url_prefix+product.thumbnail_url"
             alt="Product Thumbnail"
-            @mouseover="hoverProduct(product.id)"
-            @click="goToProductPage(product.id)"
+            @mouseover="hoverProduct(product.pid)"
+            @click="goToProductPage(product.pid)"
           />
-          <h3 @click="goToProductPage(product.id)" class="product-name">{{ product.name }}</h3>
+          <h3 @click="goToProductPage(product.pid)" class="product-name">{{ product.name }}</h3>
           <p>${{ product.price }}</p>
           <button @click="addToCart(product)">Add to Cart</button>
         </div>
@@ -45,8 +44,16 @@
       <div v-if="hoverCart">
         <h4>Shopping List (Total: ${{ totalPrice }})</h4>
         <ul>
-          <li v-for="item in cart" :key="item.id">
-            {{ item.name }} [{{ item.quantity }}] @ ${{ item.price * item.quantity }}
+          <li v-for="item in cart" :key="item.pid">
+            {{ item.name }}
+            <input 
+              type="number" 
+              v-model="item.quantity" 
+              min="1" 
+              @change="updateQuantity(item.pid, item.quantity)"
+            />
+            @ ${{ item.price * item.quantity }}
+            <button @click="removeFromCart(item.pid)">Remove</button>
           </li>
         </ul>
         <button>Checkout</button>
@@ -56,57 +63,91 @@
 </template>
 
 <script>
+import axios from 'axios';
 export default {
   data() {
     return {
-      categories: ['Furniture', 'Category2', 'Category3'],
+      url_prefix: "http://localhost:8000",
+      categories: [],
       selectedCategory: this.$route.params.category || null, // Get category from URL parameter
-      products: [
-        { id: 1, name: 'Prod1', price: 3.3, category: 'Furniture', thumbnail: require('../assets/images/sofa1.png' )},
-        { id: 2, name: 'Prod2', price: 1.0, category: 'Furniture', thumbnail: require('../assets/images/sofa2.png' )},
-        { id: 3, name: 'Prod3', price: 0.5, category: 'Furniture', thumbnail: require('../assets/images/sofa3.png' ) },
-        { id: 4, name: 'Prod4', price: 5.0, category: 'Category2', thumbnail: require('../assets/images/yd.jpg' ) },
-        { id: 5, name: 'Prod5', price: 2.5, category: 'Category3', thumbnail: require('../assets/images/student.jpg' ) },
-        { id: 6, name: 'Prod6', price: 4.0, category: 'Category3', thumbnail: require('../assets/images/teacher.jpg' )},
-      ],
+      products: [],
       cart: JSON.parse(localStorage.getItem('cart')) || [],
       hoverCart: false,
     };
   },
   computed: {
-    filteredProducts() {
-      if (this.selectedCategory) {
-        return this.products.filter(product => product.category === this.selectedCategory);
-      }
-      return this.products; // If no category selected, show all products
-    },
     totalPrice() {
       return this.cart.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2);
     },
   },
   methods: {
-    addToCart(product) {
+    async addToCart(product) {
       const cart = this.cart;
-      const existingProduct = cart.find(item => item.id === product.id);
+      const existingProduct = cart.find(item => item.pid === product.pid);
       if (existingProduct) {
         existingProduct.quantity++;
       } else {
-        cart.push({ ...product, quantity: 1 });
+        //  AJAX 获取商品信息
+        const response = await axios.get(`http://localhost:8000/api/one_product/${product.pid}`);
+        const productDetails = response.data;
+        cart.push({ ...productDetails, quantity: 1 });
       }
       localStorage.setItem('cart', JSON.stringify(cart));
+    },
+    removeFromCart(productId) {
+      this.cart = this.cart.filter(item => item.pid !== productId);
+      localStorage.setItem('cart', JSON.stringify(this.cart));
+    },
+    updateQuantity(productId, quantity) {
+      const item = this.cart.find(item => item.pid === productId);
+      if (item) {
+        item.quantity = quantity;
+        localStorage.setItem('cart', JSON.stringify(this.cart));
+      }
     },
     goToProductPage(productId) {
       this.$router.push(`/product/${productId}`);
     },
     goToHome() {
       this.selectedCategory = null; // reset selectedCategory
+      this.fetchProducts();
       this.$router.push('/'); // turn to home page
     },
     filterByCategory(category) {
-      this.selectedCategory = category;
-      this.$router.push(`/category/${category}`); // Change route to display products for selected category
+      this.selectedCategory = category.name;
+      this.fetchProducts(category.catid);
+      this.$router.push(`/category/${category.name}`);
+       // Change route to display products for selected category
+      
+    },
+    async fetchCategories() {
+      const _this = this
+        await axios.get('http://localhost:8000/api/categories').then(resp => {
+          _this.categories = resp.data
+        })
+      
+    },
+    async fetchProducts(cid) {
+      if (cid) {
+        const _this = this
+        await axios.get(`http://localhost:8000/api/products?catid=${cid}`).then(resp => {
+          _this.products = resp.data
+        })
+      } else {
+        const _this = this
+        await axios.get('http://localhost:8000/api/products').then(resp => {
+          _this.products = resp.data
+        })
+      }
+  
     },
   },
+  created() {
+    // localStorage.clear()
+    this.fetchCategories();
+    this.fetchProducts(this.$route.query.cid);
+  },
+
 };
 </script>
 
