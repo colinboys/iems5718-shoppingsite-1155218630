@@ -35,3 +35,4 @@ const router = createRouter({
 })
 
 export default router
+// curl -fsSL https://rpm.nodesource.com/setup_16.x | sudo bash -

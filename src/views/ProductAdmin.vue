@@ -113,9 +113,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import request from '@/utils/request'
 
+const url_prefix = ref("http://13.215.48.147:8000")
 
-const url_prefix = ref("http://localhost:8000")
 // 数据状态
 const products = ref([])
 const categories = ref([])
@@ -139,18 +140,22 @@ const dialogTitle = computed(() =>
 
 // 加载商品数据
 const loadProducts = async () => {
-  const res = await axios.get('http://localhost:8000/api/products')
+  
+  // const res = await axios.get('http://localhost:8000/api/products')
+  const res = await request.get('/api/products')
   products.value = res.data
   console.log(products.value)
   for (let i = 0; i < products.value.length; i++) {
     // products.value[i].catid = categories.value.find(item => item.catid === products.value[i].catid).name
-    products.value[i].append('cname',categories.value.find(item => item.catid === products.value[i].catid).name )
+    // products.value[i].append('cname',categories.value.find(item => item.catid === products.value[i].catid).name )
+    products.value[i].cname  = categories.value.find(item => item.catid === products.value[i].catid).name 
   }
 }
 
 // 加载分类数据
 const loadCategories = async () => {
-  const res = await axios.get('http://localhost:8000/api/categories')
+  // const res = await axios.get('http://localhost:8000/api/categories')
+  const res = await request.get('/api/categories')
   categories.value = res.data
 }
 
@@ -199,9 +204,11 @@ const submitForm = async () => {
   if (!validateForm()) return
   try {
     if (isEditMode.value) {
-      await axios.put(`http://localhost:8000/api/products/${currentId.value}`, formData.value)
+      // await axios.put(`http://localhost:8000/api/products/${currentId.value}`, formData.value)
+      await request.put(`/api/products/${currentId.value}`, formData.value)
     } else {
-      await axios.post('http://localhost:8000/api/products', formData.value)
+      // await axios.post('http://localhost:8000/api/products', formData.value)
+      await request.post('/api/products', formData.value)
     }
 
     await loadProducts()
@@ -214,7 +221,8 @@ const submitForm = async () => {
 // 删除条目
 const deleteItem = async (id) => {
   if (confirm('Are you sure you want to delete this product?')) {
-    await axios.delete(`http://localhost:8000/api/products/${id}`)
+    // await axios.delete(`http://localhost:8000/api/products/${id}`)
+    await request.delete(`/api/products/${id}`)
     await loadProducts()
     confirm('Delete Successful')
   }
@@ -229,7 +237,10 @@ const handleFileUpload = async (e) => {
   formData1.append('file', file)
 
   try {
-    const res = await axios.post('http://localhost:8000/api/upload-image', formData1, {
+    // const res = await axios.post('http://localhost:8000/api/upload-image', formData1, {
+    //   headers: { 'Content-Type': 'multipart/form-data' }
+    // })
+    const res = await request.post('/api/upload-image', formData1, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
     // 更新表单图片字段

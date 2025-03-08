@@ -64,11 +64,12 @@
 
 <script>
 import axios from 'axios';
-
+import request from '@/utils/request'
 export default {
   data() {
     return {
-      url_prefix: "http://localhost:8000",
+      // url_prefix: "http://localhost:8000",
+      url_prefix: "http://13.215.48.147:8000",
       categories: [],
       selectedCategory: null,
       cart: JSON.parse(localStorage.getItem('cart')) || [],
@@ -86,7 +87,9 @@ export default {
     // 添加商品到购物车（AJAX）
     async addToCart(product) {
       try {
-        const response = await axios.get(`http://localhost:8000/api/one_product/${product.pid}`);
+        // const response = await axios.get(`http://localhost:8000/api/one_product/${product.pid}`);
+        const response = await request.get(`/api/one_product/${product.pid}`);
+
         const productDetails = response.data;
         
         const existingProduct = this.cart.find(item => item.pid === product.pid);
@@ -132,12 +135,15 @@ export default {
       });
     },
     async fetchCategories() {
-      const response = await axios.get('http://localhost:8000/api/categories');
+      const response = await request.get('/api/categories');
+      // const response = await axios.get('http://localhost:8000/api/categories');
+
       this.categories = response.data;
       this.selectedCategory = this.categories.find(item => item.catid === this.product.catid)?.name;
     },
     async fetchProduct() {
-      const response = await axios.get(`http://localhost:8000/api/one_product/${this.pid}`);
+      // const response = await axios.get(`http://localhost:8000/api/one_product/${this.pid}`);
+      const response = await request.get(`/api/one_product/${this.pid}`);
       this.product = response.data;
     }
   },

@@ -54,7 +54,9 @@
   <script setup>
   import { ref, computed, onMounted } from 'vue'
   import axios from 'axios'
-  
+  import request from '@/utils/request'
+
+  const url_prefix = ref("http://13.215.48.147:8000")
   // 数据状态
   const categories = ref([])
   const showDialog = ref(false)
@@ -69,7 +71,8 @@
   
   // 加载数据
   const loadData = async () => {
-    const res = await axios.get('http://localhost:8000/api/categories')
+    // const res = await axios.get('http://localhost:8000/api/categories')
+    const res = await request.get('/api/categories')
     categories.value = res.data
   }
  
@@ -92,9 +95,11 @@
   const submitForm = async () => {
     try {
       if (isEditMode.value) {
-        await axios.put(`http://localhost:8000/api/categories/${currentId.value}`, formData.value)
+        await request.put(`/api/categories/${currentId.value}`, formData.value)
+        // await axios.put(`http://localhost:8000/api/categories/${currentId.value}`, formData.value)
       } else {
-        await axios.post('http://localhost:8000/api/categories', formData.value)
+        await request.post('/api/categories', formData.value)
+        // await axios.post('http://localhost:8000/api/categories', formData.value)
       }
       await loadData()
       closeDialog()
@@ -106,7 +111,8 @@
   // 删除条目
   const deleteItem = async (id) => {
     if (confirm('确定要删除该分类吗？')) {
-      await axios.delete(`http://localhost:8000/api/categories/${id}`)
+      // await axios.delete(`http://localhost:8000/api/categories/${id}`)
+      await request.delete(`/api/categories/${id}`)
       await loadData()
     }
   }

@@ -64,10 +64,14 @@
 
 <script>
 import axios from 'axios';
+import request from '@/utils/request'
+
+
 export default {
   data() {
     return {
-      url_prefix: "http://localhost:8000",
+      // url_prefix: "http://localhost:8000",
+      url_prefix: "http://13.215.48.147:8000",
       categories: [],
       selectedCategory: this.$route.params.category || null, // Get category from URL parameter
       products: [],
@@ -88,7 +92,8 @@ export default {
         existingProduct.quantity++;
       } else {
         //  AJAX 获取商品信息
-        const response = await axios.get(`http://localhost:8000/api/one_product/${product.pid}`);
+        const response = await request.get(`/api/one_product/${product.pid}`);
+        // const response = await axios.get(`http://localhost:8000/api/one_product/${product.pid}`);
         const productDetails = response.data;
         cart.push({ ...productDetails, quantity: 1 });
       }
@@ -122,7 +127,10 @@ export default {
     },
     async fetchCategories() {
       const _this = this
-        await axios.get('http://localhost:8000/api/categories').then(resp => {
+        // await axios.get('http://localhost:8000/api/categories').then(resp => {
+        //   _this.categories = resp.data
+        // })
+        await request.get('/api/categories').then(resp => {
           _this.categories = resp.data
         })
       
@@ -130,12 +138,18 @@ export default {
     async fetchProducts(cid) {
       if (cid) {
         const _this = this
-        await axios.get(`http://localhost:8000/api/products?catid=${cid}`).then(resp => {
+        // await axios.get(`http://localhost:8000/api/products?catid=${cid}`).then(resp => {
+        //   _this.products = resp.data
+        // })
+        await request.get(`/api/products?catid=${cid}`).then(resp => {
           _this.products = resp.data
         })
       } else {
         const _this = this
-        await axios.get('http://localhost:8000/api/products').then(resp => {
+        // await axios.get('http://localhost:8000/api/products').then(resp => {
+        //   _this.products = resp.data
+        // })
+        await request.get('/api/products').then(resp => {
           _this.products = resp.data
         })
       }
