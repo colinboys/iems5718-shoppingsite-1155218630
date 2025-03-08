@@ -1,6 +1,6 @@
 // vue.config.js
 module.exports = {
-    publicPath: process.env.NODE_ENV === 'production' ? '/iems5718-shoppingsite-1155218630/' : '/',
+    publicPath: process.env.NODE_ENV === 'production' ? '/' : '/',
     lintOnSave: false,
     devServer: {
       proxy: {
