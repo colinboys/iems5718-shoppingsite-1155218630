@@ -56,7 +56,7 @@
             <button @click="removeFromCart(item.pid)">Remove</button>
           </li>
         </ul>
-        <button>Checkout</button>
+        <button @click="checkout" :disabled="cart.length === 0">Checkout</button>
       </div>
     </div>
   </div>
@@ -69,7 +69,7 @@ export default {
   data() {
     return {
       // url_prefix: "http://localhost:8000",
-      url_prefix: "http://13.215.48.147:8000",
+      url_prefix: "https://s20.iems5718.ie.cuhk.edu.hk:8000",
       categories: [],
       selectedCategory: null,
       cart: JSON.parse(localStorage.getItem('cart')) || [],
@@ -119,6 +119,30 @@ export default {
       }
     },
 
+    async checkout() {
+      try {
+        const items = this.cart.map(item => ({
+          pid: item.pid,
+          quantity: item.quantity
+        }));
+
+        const response = await request.post('/api/checkout', { items },
+        {
+          headers: { 'Authorization': `${localStorage.getItem('auth_token')}` }
+        });
+        
+        // Redirect to PayPal approval URL
+        if (response.data.approval_url) {
+          window.location.href = response.data.approval_url;
+          // Clear cart after successful checkout
+          this.cart = [];
+          localStorage.setItem('cart', JSON.stringify([]));
+        }
+      } catch (error) {
+        console.error('Checkout failed:', error);
+        alert('Checkout failed. Please try again.');
+      }
+    },
 
     goToCategoryPage(cname) {
       this.selectedCategory = cname;

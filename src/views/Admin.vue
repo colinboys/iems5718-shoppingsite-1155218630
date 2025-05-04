@@ -15,11 +15,18 @@
       >
         Product Management
       </button>
+      <button 
+        :class="['tab-button', { active: activeTab === 'orders' }]"
+        @click="activeTab = 'orders'"
+      >
+        Order Management
+      </button>
     </div>
 
     <div class="tab-content">
       <CategoryAdmin v-if="activeTab === 'categories'" />
       <ProductAdmin v-if="activeTab === 'products'" />
+      <OrderAdmin v-if="activeTab === 'orders'" />
     </div>
   </div>
 </template>
@@ -28,6 +35,7 @@
 import { ref } from 'vue'
 import CategoryAdmin from './CategoryAdmin.vue'
 import ProductAdmin from './ProductAdmin.vue'
+import OrderAdmin from './OrderAdmin.vue'
 
 const activeTab = ref('categories') // 默认显示分类管理
 </script>

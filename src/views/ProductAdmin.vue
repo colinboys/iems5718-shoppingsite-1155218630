@@ -93,13 +93,39 @@
             <label>Upload Picture</label>
             <input 
               type="file" 
-              @change="handleFileUpload"
+              @change="handleImage"
               accept="image/*"
+              ref="fileInput"
             >
+            <!-- <div v-if="preview" class="preview-container">
+              <img :src="preview" class="preview-image" alt="Preview">
+              <button @click="clearImage" class="clear-preview">×</button>
+            </div> -->
             <div v-if="uploadStatus" class="upload-status">
               {{ uploadStatus }}
             </div>
           </div>
+
+          <!-- 添加拖放上传区域 -->
+          <div 
+            class="drop-zone"
+            @drop.prevent="handleDrop"
+            @dragover.prevent="handleDragOver"
+            @dragleave.prevent="handleDragLeave"
+            :class="{ 'drag-over': isDragging }"
+          >
+            <span v-if="!preview">Drag & drop image here or click to upload</span>
+            <input 
+              type="file" 
+              ref="fileInput" 
+              @change="handleFileSelect" 
+              accept="image/*"
+              style="display: none"
+            >
+            <img v-if="preview" :src="preview" class="image-preview" alt="Preview">
+            <button v-if="preview" @click.prevent="clearImage" class="clear-image">×</button>
+          </div>
+
           <div class="form-actions">
             <button type="button" class="btn" @click="closeDialog">Cancel</button>
             <button type="submit" class="btn primary">Submit</button>
@@ -115,8 +141,8 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import request from '@/utils/request'
 
-const url_prefix = ref("http://13.215.48.147:8000")
-
+const url_prefix = ref("https://s20.iems5718.ie.cuhk.edu.hk:8000")
+// const url_prefix = ref("http://localhost:8000")
 // 数据状态
 const products = ref([])
 const categories = ref([])
@@ -132,6 +158,8 @@ const formData = ref({
 const currentId = ref(null)
 const isEditMode = ref(false)
 const uploadStatus = ref('')
+const preview = ref('')
+const isDragging = ref(false)
 
 // 计算属性
 const dialogTitle = computed(() => 
@@ -205,10 +233,14 @@ const submitForm = async () => {
   try {
     if (isEditMode.value) {
       // await axios.put(`http://localhost:8000/api/products/${currentId.value}`, formData.value)
-      await request.put(`/api/products/${currentId.value}`, formData.value)
+      await request.put(`/api/products/${currentId.value}`, formData.value, {
+      headers: { 'Authorization': `${localStorage.getItem('auth_token')}` }
+    })
     } else {
       // await axios.post('http://localhost:8000/api/products', formData.value)
-      await request.post('/api/products', formData.value)
+      await request.post('/api/products', formData.value, {
+      headers: { 'Authorization': `${localStorage.getItem('auth_token')}` }
+    })
     }
 
     await loadProducts()
@@ -222,7 +254,9 @@ const submitForm = async () => {
 const deleteItem = async (id) => {
   if (confirm('Are you sure you want to delete this product?')) {
     // await axios.delete(`http://localhost:8000/api/products/${id}`)
-    await request.delete(`/api/products/${id}`)
+    await request.delete(`/api/products/${id}`, {
+      headers: { 'Authorization': `${localStorage.getItem('auth_token')}` }
+    })
     await loadProducts()
     confirm('Delete Successful')
   }
@@ -253,6 +287,87 @@ const handleFileUpload = async (e) => {
     uploadStatus.value = 'Upload Failed'
   }
 }
+
+// 处理拖放上传
+const handleDragOver = (e) => {
+  isDragging.value = true
+}
+
+const handleDragLeave = (e) => {
+  isDragging.value = false
+}
+
+const handleDrop = (e) => {
+  isDragging.value = false
+  const file = e.dataTransfer.files[0]
+  if (file && file.type.startsWith('image/')) {
+    handleImage(file)
+  } else {
+    alert('Please drop an image file')
+  }
+}
+
+const handleFileSelect = (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    handleImage(file)
+  }
+}
+
+const handleImage = (event) => {
+  const file = event.target.files[0] || event.dataTransfer.files[0];
+  
+  if (!file) return;
+
+  // 验证文件类型和大小
+  if (!file.type.startsWith('image/')) {
+    alert('Please select an image file');
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) { // 5MB限制
+    alert('Image size should be less than 5MB');
+    return;
+  }
+
+  // 创建预览
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    preview.value = e.target.result;
+  };
+  reader.readAsDataURL(file);
+
+  // 上传图片
+  uploadImage(file);
+};
+
+const uploadImage = async (file) => {
+  const formData1 = new FormData()
+  formData1.append('file', file)
+  
+  try {
+    const response = await request.post('/api/upload-image', formData1, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `${localStorage.getItem('auth_token')}`
+      }
+    })
+    
+    formData.value.image_url = response.data.image_url
+    formData.value.thumbnail_url = response.data.thumbnail_url
+  } catch (error) {
+    console.error('Failed to upload image:', error)
+    alert('Failed to upload image')
+  }
+}
+
+const clearImage = () => {
+  preview.value = '';
+  formData.value.image_url = '';
+  formData.value.thumbnail_url = '';
+  if (fileInput.value) {
+    fileInput.value.value = '';
+  }
+};
 
 // 关闭弹窗
 const closeDialog = () => {
@@ -355,4 +470,87 @@ onMounted(() => {
     margin-top: 20px;
     text-align: right;
   }
-  </style>
+
+  .drop-zone {
+    width: 100%;
+    height: 200px;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .drop-zone:hover {
+    border-color: #409eff;
+  }
+
+  .drag-over {
+    border-color: #409eff;
+    background-color: rgba(64, 158, 255, 0.1);
+  }
+
+  .image-preview {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .clear-image {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .clear-image:hover {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  .preview-container {
+    margin-top: 10px;
+    position: relative;
+    display: inline-block;
+  }
+
+  .preview-image {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+  }
+
+  .clear-preview {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .clear-preview:hover {
+    background: rgba(0, 0, 0, 0.7);
+  }
+</style>
