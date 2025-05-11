@@ -79,12 +79,29 @@ const router = createRouter({
 
 // 添加全局路由守卫
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = localStorage.getItem('auth_token') // 假设令牌存储在localStorage
+  const isAuthenticated = localStorage.getItem('auth_token') 
+  const isAdmin = localStorage.getItem('isAdmin') === 'true';
+  if (to.path === '/admin' && (!isAuthenticated || !isAdmin)) {
+        next('/login'); // 非管理员用户重定向到登录页
+      } else {
+        next();
+      }
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/login') // 未登录时跳转到登录页
   } else {
     next()
   }
 })
+
+// router.beforeEach((to, from, next) => {
+//   const isAuthenticated = localStorage.getItem('auth_token');
+//   const isAdmin = localStorage.getItem('isAdmin') === 'true';
+
+//   if (to.path === '/admin' && (!isAuthenticated || !isAdmin)) {
+//     next('/'); // 非管理员用户重定向到首页
+//   } else {
+//     next();
+//   }
+// });
 export default router
 // curl -fsSL https://rpm.nodesource.com/setup_16.x | sudo bash -

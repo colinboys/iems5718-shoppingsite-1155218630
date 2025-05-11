@@ -166,9 +166,7 @@ export default {
         {
           headers: { 'Authorization': `${localStorage.getItem('auth_token')}` }
         });
-        await request.put(`/api/products/${currentId.value}`, formData.value, {
-      headers: { 'Authorization': `${localStorage.getItem('auth_token')}` }
-    })
+
         // Redirect to PayPal approval URL
         if (response.data.approval_url) {
           window.location.href = response.data.approval_url;
