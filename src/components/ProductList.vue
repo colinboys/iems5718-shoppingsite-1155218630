@@ -127,9 +127,6 @@ export default {
     },
     async fetchCategories() {
       const _this = this
-        // await axios.get('http://localhost:8000/api/categories').then(resp => {
-        //   _this.categories = resp.data
-        // })
         await request.get('/api/categories').then(resp => {
           _this.categories = resp.data
         })
@@ -138,17 +135,11 @@ export default {
     async fetchProducts(cid) {
       if (cid) {
         const _this = this
-        // await axios.get(`http://localhost:8000/api/products?catid=${cid}`).then(resp => {
-        //   _this.products = resp.data
-        // })
         await request.get(`/api/products?catid=${cid}`).then(resp => {
           _this.products = resp.data
         })
       } else {
         const _this = this
-        // await axios.get('http://localhost:8000/api/products').then(resp => {
-        //   _this.products = resp.data
-        // })
         await request.get('/api/products').then(resp => {
           _this.products = resp.data
         })
